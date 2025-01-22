@@ -1,5 +1,5 @@
 {
-  "name": "@myscada/st-ethernet-ip",
+  "name": "st-ethernet-ip",
   "version": "2.7.3",
   "description": "A simple node interface for Ethernet/IP.",
   "keywords": [
