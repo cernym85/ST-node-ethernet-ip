@@ -458,32 +458,29 @@ export class Tag extends EventEmitter {
      */
     parseReadMessageResponseValueForBitIndex(data: Buffer) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, BIT_STRING, UINT } = Types;
+        const { SINT, INT, DINT, UDINT, BIT_STRING, UINT } = Types;
 
         // Read Tag Value
         /* eslint-disable indent */
         switch (this.state.tag.type) {
-            case SINT:
-                this.controller_value =
-                    (data.readInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            case UINT:
-                this.controller_value =
-                    (data.readUInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            case INT:
-                this.controller_value =
-                    (data.readInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            case DINT:
-            case BIT_STRING:
-                this.controller_value =
-                    (data.readInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            default:
-                throw new Error(
-                    "Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested"
-                );
+          case SINT:
+            this.controller_value = (data.readInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case UINT:
+            this.controller_value = (data.readUInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case INT:
+            this.controller_value = (data.readInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case DINT:
+          case BIT_STRING:
+            this.controller_value = (data.readInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case UDINT:
+            this.controller_value = (data.readUInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          default:
+            throw new Error("Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested");
         }
         /* eslint-enable indent */
     }
@@ -494,7 +491,7 @@ export class Tag extends EventEmitter {
      * @param Data - Returned from Successful Read Tag Request
      */
     parseReadMessageResponseValueForAtomic(data: Buffer) {
-        const { SINT, INT, DINT, REAL, BOOL, LINT, BIT_STRING, UINT } = Types;
+        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT, BIT_STRING, UINT } = Types;
 
         const { read_size } = this.state;
 
@@ -543,6 +540,17 @@ export class Tag extends EventEmitter {
                     this.controller_value = array;
                 } else {
                     this.controller_value = data.readInt32LE(2);
+                }
+                break;
+            case UDINT:
+                if (data.length > 6) {
+                    const array = [];
+                    for (let i = 0; i < (data.length - 2) / 4; i++) {
+                        array.push(data.readUInt32LE(i * 4 + 2));
+                    }
+                    this.controller_value = array;
+                } else {
+                    this.controller_value = data.readUInt32LE(2);
                 }
                 break;
             case REAL:
@@ -623,7 +631,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestForBitIndex(value: number): Buffer {
         const { tag } = this.state;
-        const { SINT, INT, DINT, BIT_STRING } = Types;
+        const { SINT, INT, DINT, UDINT, BIT_STRING } = Types;
 
         // Build Message Router to Embed in UCMM
         let buf = null;
@@ -649,6 +657,12 @@ export class Tag extends EventEmitter {
                 buf.writeInt32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
                 buf.writeInt32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
                 break;
+            case UDINT:
+                buf = Buffer.alloc(10);
+                buf.writeInt16LE(4); //mask length
+                buf.writeIntU32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+                buf.writeIntU32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
+                break;
             default:
                 throw new Error(
                     "Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types."
@@ -668,7 +682,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestForAtomic(value: any, size: number) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, REAL, BOOL, LINT } = Types;
+        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT } = Types;
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(4);
         let valBuf = null;
@@ -716,6 +730,18 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(4);
                     valBuf.writeInt32LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);               
+                break;
+            case UDINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(4 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeUInt32LE(value[i], i * 4);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(4);
+                    valBuf.writeUInt32LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);               
                 break;
@@ -773,7 +799,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestFrag(offset: number = 0, value: Buffer = null, size: number = 0x01) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, REAL, BOOL, LINT } = Types;
+        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT } = Types;
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(8);
         let valBuf = null;
@@ -817,6 +843,18 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(4);
                     valBuf.writeInt32LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);               
+                break;
+            case UDINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(4 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeUInt32LE(value[i], i * 4);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(4);
+                    valBuf.writeUInt32LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);               
                 break;

@@ -166,103 +166,111 @@ export class Structure extends Tag {
 
         let structValues = {};
         
-        const {SINT, INT, DINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
+        const { SINT, INT, DINT, UDINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
 
-        template._members.forEach(member => {
-            
-            /* eslint-disable indent */
-            switch (member.type.structure ? STRUCT : member.type.code) {
-                case SINT:
-                    if (member.type.arrayDims > 0) {
-                        structValues[member.name] = [];
-                        for (let i = 0; i < member.info; i++) {
-                            structValues[member.name].push(data.readUInt8(member.offset + i));
-                        }
-                    } else {
-                        structValues[member.name] = data.readUInt8(member.offset);
-                    } 
-                    break;
-                case INT:
-                    if (member.type.arrayDims > 0) {
-                        let array = [];
-                        for (let i = 0; i < member.info * 2; i+=2) {
-                            array.push(data.readInt16LE(member.offset + i));
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = data.readInt16LE(member.offset);
-                    }
-                    break;
-                case DINT:
-                    if (member.type.arrayDims > 0) {
-                        let array = [];
-                        for (let i = 0; i < member.info * 4; i+=4) {
-                            array.push(data.readInt32LE(member.offset + i));
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = data.readInt32LE(member.offset);
-                    }
-                    break;
-                case REAL:
-                    if (member.type.arrayDims > 0) {
-                        let array = [];
-                        for (let i = 0; i < member.info * 4; i+=4) {
-                            array.push(data.readFloatLE(member.offset + i));
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = data.readFloatLE(member.offset);
-                    }
-                    break;
-                case LINT:
-                    if (member.type.arrayDims > 0) {
-                        let array = [];
-                        for (let i = 0; i < member.info * 8; i+=8) {
-                            array.push(data.readBigInt64LE(member.offset + i));
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = data.readBigInt64LE(member.offset);
-                    }
-                    break;
-                case BIT_STRING:
-                    if (member.type.arrayDims > 0) {
-                        let array = [];
-                        for (let i = 0; i < member.info * 4; i+=4) {
-                            let bitString32bitValue = data.readUInt32LE(member.offset + i);
-                            for (let j = 0; j < 32; j++) {
-                                array.push(!!(bitString32bitValue >> j & 0x01));
-                            }
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = data.readUInt32LE(member.offset);
-                    }
-                    break;
-                case BOOL:
-                    structValues[member.name] = !!(data.readUInt8(member.offset) & (1 << member.info));
-                    break;
-                case STRUCT: {
-                    const memberTemplate = this._taglist.templates[member.type.code];
-                    const memberStructSize = memberTemplate._attributes.StructureSize;
-                    if (member.type.arrayDims > 0) { 
-                        let array = [];
-                        for (let i = 0; i < member.info * memberStructSize; i+=memberStructSize) {
-                            array.push(this._parseReadData(data.subarray(member.offset + i), memberTemplate));
-                        }
-                        structValues[member.name] = array;
-                    } else {
-                        structValues[member.name] = this._parseReadData(data.subarray(member.offset), memberTemplate);
-                    }
-                    break;
+        template._members.forEach((member) => {
+          /* eslint-disable indent */
+          switch (member.type.structure ? STRUCT : member.type.code) {
+            case SINT:
+              if (member.type.arrayDims > 0) {
+                structValues[member.name] = [];
+                for (let i = 0; i < member.info; i++) {
+                  structValues[member.name].push(data.readUInt8(member.offset + i));
                 }
-                default:
-                    throw new Error(
-                        "Data Type other than SINT, INT, DINT, LINT, BOOL, STRUCT or BIT_STRING returned "
-                    );
+              } else {
+                structValues[member.name] = data.readUInt8(member.offset);
+              }
+              break;
+            case INT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 2; i += 2) {
+                  array.push(data.readInt16LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readInt16LE(member.offset);
+              }
+              break;
+            case DINT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 4; i += 4) {
+                  array.push(data.readInt32LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readInt32LE(member.offset);
+              }
+              break;
+            case UDINT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 4; i += 4) {
+                  array.push(data.readUInt32LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readUInt32LE(member.offset);
+              }
+              break;
+            case REAL:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 4; i += 4) {
+                  array.push(data.readFloatLE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readFloatLE(member.offset);
+              }
+              break;
+            case LINT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 8; i += 8) {
+                  array.push(data.readBigInt64LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readBigInt64LE(member.offset);
+              }
+              break;
+            case BIT_STRING:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 4; i += 4) {
+                  let bitString32bitValue = data.readUInt32LE(member.offset + i);
+                  for (let j = 0; j < 32; j++) {
+                    array.push(!!((bitString32bitValue >> j) & 0x01));
+                  }
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readUInt32LE(member.offset);
+              }
+              break;
+            case BOOL:
+              structValues[member.name] = !!(data.readUInt8(member.offset) & (1 << member.info));
+              break;
+            case STRUCT: {
+              const memberTemplate = this._taglist.templates[member.type.code];
+              const memberStructSize = memberTemplate._attributes.StructureSize;
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * memberStructSize; i += memberStructSize) {
+                  array.push(this._parseReadData(data.subarray(member.offset + i), memberTemplate));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = this._parseReadData(data.subarray(member.offset), memberTemplate);
+              }
+              break;
             }
-            /* eslint-enable indent */   
+            default:
+              throw new Error("Data Type other than SINT, INT, DINT, LINT, BOOL, STRUCT or BIT_STRING returned ");
+          }
+          /* eslint-enable indent */
         });
         return structValues;
     }
@@ -293,7 +301,7 @@ export class Structure extends Tag {
 
         const data = Buffer.alloc(template._attributes.StructureSize);
 
-        const {SINT, INT, DINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
+        const {SINT, INT, DINT, UDINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
         
         template._members.forEach(member => {
             /* eslint-disable indent */
@@ -323,6 +331,15 @@ export class Structure extends Tag {
                         }
                     } else {
                         data.writeInt32LE(structValues[member.name],member.offset);
+                    }
+                    break;
+                case UDINT:
+                    if (member.type.arrayDims > 0) {
+                        for (let i = 0; i < member.info; i++) {
+                            data.writeUInt32LE(structValues[member.name][i], member.offset + (i * 4));
+                        }
+                    } else {
+                        data.writeUInt32LE(structValues[member.name],member.offset);
                     }
                     break;
                 case REAL:
