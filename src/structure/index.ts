@@ -311,7 +311,7 @@ export class Structure extends Tag {
               break;
             }
             default:
-              throw new Error("Data Type other than SINT, INT, DINT, LINT, BOOL, STRUCT or BIT_STRING returned ");
+              throw new Error("Data Type other than SINT, USINT, INT, UNIT, DINT, UDINT, LINT, ULINT, REAL, LREAL, BOOL, STRUCT or BIT_STRING returned ");
           }
           /* eslint-enable indent */
         });
@@ -480,7 +480,7 @@ export class Structure extends Tag {
                 }
                 default:
                     throw new Error(
-                        "Data Type other than SINT, INT, DINT, LINT, BOOL, STRUCT or BIT_STRING returned "
+                        "Data Type other than SINT, USINT, INT, UNIT, DINT, UDINT, LINT, ULINT, REAL, LREAL, BOOL, STRUCT or BIT_STRING returned "
                     );
             }
             /* eslint-enable indent */   

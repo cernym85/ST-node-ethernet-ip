@@ -489,7 +489,7 @@ export class Tag extends EventEmitter {
             this.controller_value = (data.readBigUInt64LE(2) & BigInt(1 << tag.bitIndex)) == 0n ? false : true;
             break;
           default:
-            throw new Error("Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested");
+            throw new Error("Data Type other than SINT, USINT, INT, UNIT, DINT, UDINT, LINT, ULINT or BIT_STRING returned when a Bit Index was requested");
         }
         /* eslint-enable indent */
     }
@@ -733,7 +733,7 @@ export class Tag extends EventEmitter {
             buf.writeBigUInt64LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
             break;
           default:
-            throw new Error("Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types.");
+            throw new Error("Bit Indexes can only be used on SINT, USINT, INT, UNIT, DINT, UDINT, LINT, ULINT or BIT_STRING data types.");
         }
 
         // Build Current Message
