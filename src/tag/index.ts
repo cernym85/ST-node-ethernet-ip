@@ -458,7 +458,7 @@ export class Tag extends EventEmitter {
      */
     parseReadMessageResponseValueForBitIndex(data: Buffer) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, UDINT, BIT_STRING, UINT } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, LINT, ULINT, BIT_STRING } = Types;
 
         // Read Tag Value
         /* eslint-disable indent */
@@ -466,11 +466,14 @@ export class Tag extends EventEmitter {
           case SINT:
             this.controller_value = (data.readInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
             break;
-          case UINT:
-            this.controller_value = (data.readUInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+          case USINT:
+            this.controller_value = (data.readUInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
             break;
           case INT:
             this.controller_value = (data.readInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case UINT:
+            this.controller_value = (data.readUInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
             break;
           case DINT:
           case BIT_STRING:
@@ -478,6 +481,12 @@ export class Tag extends EventEmitter {
             break;
           case UDINT:
             this.controller_value = (data.readUInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
+            break;
+          case LINT:
+            this.controller_value = (data.readBigInt64LE(2) & BigInt(1 << tag.bitIndex)) == 0n ? false : true;
+            break;
+          case ULINT:
+            this.controller_value = (data.readBigUInt64LE(2) & BigInt(1 << tag.bitIndex)) == 0n ? false : true;
             break;
           default:
             throw new Error("Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested");
@@ -491,7 +500,7 @@ export class Tag extends EventEmitter {
      * @param Data - Returned from Successful Read Tag Request
      */
     parseReadMessageResponseValueForAtomic(data: Buffer) {
-        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT, BIT_STRING, UINT } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, BOOL, LINT, ULINT, LREAL, BIT_STRING } = Types;
 
         const { read_size } = this.state;
 
@@ -509,6 +518,17 @@ export class Tag extends EventEmitter {
                     this.controller_value = data.readInt8(2);
                 }
                 break;
+            case USINT:
+            if (data.length > 3) {
+                const array = [];
+                for (let i = 0; i < data.length - 2; i++) {
+                    array.push(data.readUInt8(i + 2));
+                }
+                this.controller_value = array;
+            } else {
+                this.controller_value = data.readUInt8(2);
+            }
+            break;
             case UINT:
                 if (data.length > 4) {
                     const array = [];
@@ -589,6 +609,31 @@ export class Tag extends EventEmitter {
                     this.controller_value = array;
                 } else {
                     this.controller_value = data.readBigInt64LE(2);
+                }
+                break;
+            case ULINT:
+                if(typeof data.writeBigUInt64LE !== "function") {
+                    throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
+                }
+                if (data.length > 10) {
+                    const array = [];
+                    for (let i = 0; i < (data.length - 2) / 8; i++) {
+                        array.push(data.readBigUInt64LE(i * 8 + 2));
+                    }
+                    this.controller_value = array;
+                } else {
+                    this.controller_value = data.readBigUInt64LE(2);
+                }
+                break;
+            case LREAL:
+                if (data.length > 6) {
+                    const array = [];
+                    for (let i = 0; i < (data.length - 2) / 8; i++) {
+                        array.push(data.readDoubleLE(i * 8 + 2));
+                    }
+                    this.controller_value = array;
+                } else {
+                    this.controller_value = data.readDoubleLE(2);
                 }
                 break;
             default:

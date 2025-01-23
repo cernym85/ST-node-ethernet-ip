@@ -166,12 +166,22 @@ export class Structure extends Tag {
 
         let structValues = {};
         
-        const { SINT, INT, DINT, UDINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LINT, ULINT, LREAL, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
 
         template._members.forEach((member) => {
           /* eslint-disable indent */
           switch (member.type.structure ? STRUCT : member.type.code) {
             case SINT:
+              if (member.type.arrayDims > 0) {
+                structValues[member.name] = [];
+                for (let i = 0; i < member.info; i++) {
+                  structValues[member.name].push(data.readInt8(member.offset + i));
+                }
+              } else {
+                structValues[member.name] = data.readInt8(member.offset);
+              }
+              break;
+            case USINT:
               if (member.type.arrayDims > 0) {
                 structValues[member.name] = [];
                 for (let i = 0; i < member.info; i++) {
@@ -190,6 +200,17 @@ export class Structure extends Tag {
                 structValues[member.name] = array;
               } else {
                 structValues[member.name] = data.readInt16LE(member.offset);
+              }
+              break;
+            case UINT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 2; i += 2) {
+                  array.push(data.readUInt16LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readUInt16LE(member.offset);
               }
               break;
             case DINT:
@@ -234,6 +255,28 @@ export class Structure extends Tag {
                 structValues[member.name] = array;
               } else {
                 structValues[member.name] = data.readBigInt64LE(member.offset);
+              }
+              break;
+            case ULINT:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 8; i += 8) {
+                  array.push(data.readBigUInt64LE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readBigUInt64LE(member.offset);
+              }
+              break;
+            case LREAL:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info * 4; i += 4) {
+                  array.push(data.readDoubleLE(member.offset + i));
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readDoubleLE(member.offset);
               }
               break;
             case BIT_STRING:
@@ -301,7 +344,7 @@ export class Structure extends Tag {
 
         const data = Buffer.alloc(template._attributes.StructureSize);
 
-        const {SINT, INT, DINT, UDINT, REAL, LINT, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
+        const {SINT, USINT, INT, UINT, DINT, UDINT, REAL, LINT, ULINT, LREAL, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
         
         template._members.forEach(member => {
             /* eslint-disable indent */
@@ -309,12 +352,21 @@ export class Structure extends Tag {
                 case SINT:
                     if (member.type.arrayDims > 0) {
                         for (let i = 0; i < member.info; i++) {
-                            data.writeUInt8(structValues[member.name][i], member.offset + i);
+                            data.writeInt8(structValues[member.name][i], member.offset + i);
                         }
                     } else {
-                        data.writeUInt8(structValues[member.name], member.offset);
+                        data.writeInt8(structValues[member.name], member.offset);
                     } 
                     break;
+                case USINT:
+                if (member.type.arrayDims > 0) {
+                    for (let i = 0; i < member.info; i++) {
+                        data.writeUInt8(structValues[member.name][i], member.offset + i);
+                    }
+                } else {
+                    data.writeUInt8(structValues[member.name], member.offset);
+                } 
+                break;
                 case INT:
                     if (member.type.arrayDims > 0) {
                         for (let i = 0; i < member.info; i++) {
@@ -324,6 +376,15 @@ export class Structure extends Tag {
                         data.writeInt16LE(structValues[member.name],member.offset);
                     }
                     break;
+                case UINT:
+                if (member.type.arrayDims > 0) {
+                    for (let i = 0; i < member.info; i++) {
+                        data.writeUInt16LE(structValues[member.name][i], member.offset + (i * 2));
+                    }
+                } else {
+                    data.writeUInt16LE(structValues[member.name],member.offset);
+                }
+                break;
                 case DINT:
                     if (member.type.arrayDims > 0) {
                         for (let i = 0; i < member.info; i++) {
@@ -360,6 +421,24 @@ export class Structure extends Tag {
                         data.writeBigInt64LE(structValues[member.name],member.offset);
                     }
                     break;
+                case ULINT:
+                    if (member.type.arrayDims > 0) {
+                        for (let i = 0; i < member.info; i++) {
+                            data.writeBigUInt64LE(structValues[member.name][i], member.offset + (i * 8));
+                        }
+                    } else {
+                        data.writeBigUInt64LE(structValues[member.name],member.offset);
+                    }
+                    break;
+                case LREAL:
+                if (member.type.arrayDims > 0) {
+                    for (let i = 0; i < member.info; i++) {
+                        data.writeDoubleLE(structValues[member.name][i], member.offset + (i * 4));
+                    }
+                } else {
+                    data.writeDoubleLE(structValues[member.name],member.offset);
+                }
+                break;
                 case BIT_STRING:
                     if (member.type.arrayDims > 0) {
                         for (let i = 0; i < member.info; i++) {
