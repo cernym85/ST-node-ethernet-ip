@@ -676,42 +676,64 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestForBitIndex(value: number): Buffer {
         const { tag } = this.state;
-        const { SINT, INT, DINT, UDINT, BIT_STRING } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, LINT, ULINT, BIT_STRING } = Types;
 
         // Build Message Router to Embed in UCMM
         let buf = null;
 
         /* eslint-disable indent */
         switch (tag.type) {
-            case SINT:
-                buf = Buffer.alloc(4);
-                buf.writeInt16LE(1); //mask length
-                buf.writeUInt8(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeUInt8(value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
-                break;
-            case INT:
-                buf = Buffer.alloc(6);
-                buf.writeInt16LE(2); //mask length
-                buf.writeUInt16LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeUInt16LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
-                break;
-            case DINT:
-            case BIT_STRING:
-                buf = Buffer.alloc(10);
-                buf.writeInt16LE(4); //mask length
-                buf.writeInt32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeInt32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
-                break;
-            case UDINT:
-                buf = Buffer.alloc(10);
-                buf.writeInt16LE(4); //mask length
-                buf.writeIntU32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeIntU32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
-                break;
-            default:
-                throw new Error(
-                    "Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types."
-                );
+          case SINT:
+            buf = Buffer.alloc(4);
+            buf.writeInt16LE(1); //mask length
+            buf.writeInt8(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeInt8(value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
+            break;
+          case USINT:
+            buf = Buffer.alloc(4);
+            buf.writeInt16LE(1); //mask length
+            buf.writeUInt8(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeUInt8(value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
+            break;
+          case INT:
+            buf = Buffer.alloc(6);
+            buf.writeInt16LE(2); //mask length
+            buf.writeInt16LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeInt16LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
+            break;
+          case UINT:
+            buf = Buffer.alloc(6);
+            buf.writeInt16LE(2); //mask length
+            buf.writeUInt16LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeUInt16LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
+            break;
+          case DINT:
+          case BIT_STRING:
+            buf = Buffer.alloc(10);
+            buf.writeInt16LE(4); //mask length
+            buf.writeInt32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeInt32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
+            break;
+          case UDINT:
+            buf = Buffer.alloc(10);
+            buf.writeInt16LE(4); //mask length
+            buf.writeIntU32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeIntU32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
+            break;
+          case LINT:
+            buf = Buffer.alloc(6);
+            buf.writeInt16LE(2); //mask length
+            buf.writeBigInt64LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeBigInt64LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
+            break;
+          case ULINT:
+            buf = Buffer.alloc(6);
+            buf.writeInt16LE(2); //mask length
+            buf.writeBigUInt64LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
+            buf.writeBigUInt64LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
+            break;
+          default:
+            throw new Error("Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types.");
         }
 
         // Build Current Message
@@ -727,7 +749,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestForAtomic(value: any, size: number) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LREAL, BOOL, LINT, ULINT } = Types;
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(4);
         let valBuf = null;
@@ -746,11 +768,23 @@ export class Tag extends EventEmitter {
                 if (Array.isArray(value)) {
                     valBuf = Buffer.alloc(value.length);
                     for (var i = 0; i < value.length; i++) {
-                        valBuf.writeUInt8(value[i], i);
+                        valBuf.writeInt8(value[i], i);
                     }
                 } else {
                     valBuf = Buffer.alloc(1);
                     valBuf.writeInt8(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case USINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(value.length);
+                    for (var i = 0; i < value.length; i++) {
+                        valBuf.writeUInt8(value[i], i);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(1);
+                    valBuf.writeUInt8(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -763,6 +797,18 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(2);
                     valBuf.writeInt16LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case UINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(2 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeUInt16LE(value[i], i * 2);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(2);
+                    valBuf.writeUInt16LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -802,6 +848,18 @@ export class Tag extends EventEmitter {
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
+            case LREAL:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(8 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeDoubleLE(value[i], i * 8);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(8);
+                    valBuf.writeDoubleLE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
             case BOOL:
                 valBuf = Buffer.alloc(1);
                 if (!tag.value) valBuf.writeInt8(0x00);
@@ -822,6 +880,22 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(8);
                     valBuf.writeBigInt64LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case ULINT:
+                valBuf = Buffer.alloc(8);
+                if(typeof valBuf.writeBigUInt64LE !== "function") {
+                    throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
+                }
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(8 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeBigUInt64LE(value[i], i * 8);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(8);
+                    valBuf.writeBigUInt64LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -844,7 +918,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestFrag(offset: number = 0, value: Buffer = null, size: number = 0x01) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, UDINT, REAL, BOOL, LINT } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LREAL, BOOL, LINT, ULINT } = Types;
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(8);
         let valBuf = null;
@@ -859,11 +933,23 @@ export class Tag extends EventEmitter {
                 if (Array.isArray(value)) {
                     valBuf = Buffer.alloc(value.length);
                     for (var i = 0; i < value.length; i++) {
-                        valBuf.writeUInt8(value[i], i);
+                        valBuf.writeInt8(value[i], i);
                     }
                 } else {
                     valBuf = Buffer.alloc(1);
                     valBuf.writeInt8(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case USINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(value.length);
+                    for (var i = 0; i < value.length; i++) {
+                        valBuf.writeUInt8(value[i], i);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(1);
+                    valBuf.writeUInt8(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -876,6 +962,18 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(2);
                     valBuf.writeInt16LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case UINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(2 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeUInt16LE(value[i], i * 2);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(2);
+                    valBuf.writeUInt16LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -915,6 +1013,18 @@ export class Tag extends EventEmitter {
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
+            case LREAL:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(8 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeDoubleLE(value[i], i * 8);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(8);
+                    valBuf.writeDoubleLE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
             case BOOL:
                 valBuf = Buffer.alloc(1);
                 if (!tag.value) valBuf.writeInt8(0x00);
@@ -935,6 +1045,22 @@ export class Tag extends EventEmitter {
                 } else {
                     valBuf = Buffer.alloc(8);
                     valBuf.writeBigInt64LE(tag.value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case ULINT:
+                valBuf = Buffer.alloc(8);
+                if(typeof valBuf.writeBigUInt64LE !== "function") {
+                    throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
+                }
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(8 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeBigUInt64LE(value[i], i * 8);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(8);
+                    valBuf.writeBigUInt64LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
