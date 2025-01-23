@@ -2,6 +2,7 @@
 
 # Node Ethernet/IP
 
+Fork based on st-etheret-ip package of Jason Serafin (https://github.com/st-node-ethernet-ip#readme).
 A simple and lightweight node based API for interfacing with Rockwell Control/CompactLogix PLCs and Ethernet/IP I/O.
 
 ## Prerequisites
@@ -13,7 +14,7 @@ latest version of [NodeJS](https://nodejs.org/en/)
 Install with npm
 
 ```
-npm install st-ethernet-ip --save
+npm install @myscada/st-ethernet-ip --save
 ```
 ## The API
 

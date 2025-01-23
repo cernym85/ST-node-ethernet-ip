@@ -25,7 +25,7 @@
     "url": "git+https://github.com/cernym85/st-node-ethernet-ip.git"
   },
   "license": "MIT",
-  "author": "Jason Serafin",
+  "author": "Matej Cerny",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
