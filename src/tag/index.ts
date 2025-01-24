@@ -500,146 +500,152 @@ export class Tag extends EventEmitter {
      * @param Data - Returned from Successful Read Tag Request
      */
     parseReadMessageResponseValueForAtomic(data: Buffer) {
-        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, BOOL, LINT, ULINT, LREAL, BIT_STRING } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, BOOL, LINT, ULINT, LREAL, BIT_STRING, SHORT_STRING } = Types;
 
         const { read_size } = this.state;
 
         // Read Tag Value
         /* eslint-disable indent */
         switch (this.state.tag.type) {
-            case SINT:
-                if (data.length > 3) {
-                    const array = [];
-                    for (let i = 0; i < data.length - 2; i++) {
-                        array.push(data.readInt8(i + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readInt8(2);
-                }
-                break;
-            case USINT:
+          case SINT:
             if (data.length > 3) {
-                const array = [];
-                for (let i = 0; i < data.length - 2; i++) {
-                    array.push(data.readUInt8(i + 2));
-                }
-                this.controller_value = array;
+              const array = [];
+              for (let i = 0; i < data.length - 2; i++) {
+                array.push(data.readInt8(i + 2));
+              }
+              this.controller_value = array;
             } else {
-                this.controller_value = data.readUInt8(2);
+              this.controller_value = data.readInt8(2);
             }
             break;
-            case UINT:
-                if (data.length > 4) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 2; i++) {
-                        array.push(data.readUInt16LE(i * 2 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readUInt16LE(2);
-                }
-                break;
-            case INT:
-                if (data.length > 4) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 2; i++) {
-                        array.push(data.readInt16LE(i * 2 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readInt16LE(2);
-                }
-                break;
-            case DINT:
-                if (data.length > 6) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 4; i++) {
-                        array.push(data.readInt32LE(i * 4 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readInt32LE(2);
-                }
-                break;
-            case UDINT:
-                if (data.length > 6) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 4; i++) {
-                        array.push(data.readUInt32LE(i * 4 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readUInt32LE(2);
-                }
-                break;
-            case REAL:
-                if (data.length > 6) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 4; i++) {
-                        array.push(data.readFloatLE(i * 4 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readFloatLE(2);
-                }
-                break;
-            case BOOL:
-                this.controller_value = !!data.readUInt8(2);
-                break;
-            case BIT_STRING: {
-                const array = [];
-                for (let b = 0; b < read_size; b++) {
-                    for (let i = 0; i < 32; i++) {
-                        array.push(!!(data.readUInt32LE(b * 4 + 2) >> i & 0x01));
-                    }
-                }
-                this.controller_value = array;
-                break;
+          case USINT:
+            if (data.length > 3) {
+              const array = [];
+              for (let i = 0; i < data.length - 2; i++) {
+                array.push(data.readUInt8(i + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readUInt8(2);
             }
-            case LINT:
-                if(typeof data.writeBigInt64LE !== "function") {
-                    throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
-                }
-                if (data.length > 10) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 8; i++) {
-                        array.push(data.readBigInt64LE(i * 8 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readBigInt64LE(2);
-                }
-                break;
-            case ULINT:
-                if(typeof data.writeBigUInt64LE !== "function") {
-                    throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
-                }
-                if (data.length > 10) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 8; i++) {
-                        array.push(data.readBigUInt64LE(i * 8 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readBigUInt64LE(2);
-                }
-                break;
-            case LREAL:
-                if (data.length > 6) {
-                    const array = [];
-                    for (let i = 0; i < (data.length - 2) / 8; i++) {
-                        array.push(data.readDoubleLE(i * 8 + 2));
-                    }
-                    this.controller_value = array;
-                } else {
-                    this.controller_value = data.readDoubleLE(2);
-                }
-                break;
-            default:
-                throw new Error(
-                    `Unrecognized Type Passed Read from Controller: ${this.state.tag.type}`
-                );
+            break;
+          case UINT:
+            if (data.length > 4) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 2; i++) {
+                array.push(data.readUInt16LE(i * 2 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readUInt16LE(2);
+            }
+            break;
+          case INT:
+            if (data.length > 4) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 2; i++) {
+                array.push(data.readInt16LE(i * 2 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readInt16LE(2);
+            }
+            break;
+          case DINT:
+            if (data.length > 6) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 4; i++) {
+                array.push(data.readInt32LE(i * 4 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readInt32LE(2);
+            }
+            break;
+          case UDINT:
+            if (data.length > 6) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 4; i++) {
+                array.push(data.readUInt32LE(i * 4 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readUInt32LE(2);
+            }
+            break;
+          case REAL:
+            if (data.length > 6) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 4; i++) {
+                array.push(data.readFloatLE(i * 4 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readFloatLE(2);
+            }
+            break;
+          case BOOL:
+            this.controller_value = !!data.readUInt8(2);
+            break;
+          case BIT_STRING: {
+            const array = [];
+            for (let b = 0; b < read_size; b++) {
+              for (let i = 0; i < 32; i++) {
+                array.push(!!((data.readUInt32LE(b * 4 + 2) >> i) & 0x01));
+              }
+            }
+            this.controller_value = array;
+            break;
+          }
+          case SHORT_STRING: {
+            if (data.length > 3) {
+              let strLen = data[2];
+              if (data.length < strLen + 3) strLen = data.length - 3;
+              this.controller_value = data.toString("utf-8", 3, strLen + 3);
+              break;
+            }
+          }
+          case LINT:
+            if (typeof data.writeBigInt64LE !== "function") {
+              throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
+            }
+            if (data.length > 10) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 8; i++) {
+                array.push(data.readBigInt64LE(i * 8 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readBigInt64LE(2);
+            }
+            break;
+          case ULINT:
+            if (typeof data.writeBigUInt64LE !== "function") {
+              throw new Error("This version of Node.js does not support big integers. Upgrade to >= 12.0.0");
+            }
+            if (data.length > 10) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 8; i++) {
+                array.push(data.readBigUInt64LE(i * 8 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readBigUInt64LE(2);
+            }
+            break;
+          case LREAL:
+            if (data.length > 6) {
+              const array = [];
+              for (let i = 0; i < (data.length - 2) / 8; i++) {
+                array.push(data.readDoubleLE(i * 8 + 2));
+              }
+              this.controller_value = array;
+            } else {
+              this.controller_value = data.readDoubleLE(2);
+            }
+            break;
+          default:
+            throw new Error(`Unrecognized Type Passed Read from Controller: ${this.state.tag.type}`);
         }
         /* eslint-enable indent */
     }
@@ -749,7 +755,7 @@ export class Tag extends EventEmitter {
      */
     generateWriteMessageRequestForAtomic(value: any, size: number) {
         const { tag } = this.state;
-        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LREAL, BOOL, LINT, ULINT } = Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LREAL, BOOL, LINT, ULINT, SHORT_STRING } = Types;
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(4);
         let valBuf = null;
@@ -898,6 +904,10 @@ export class Tag extends EventEmitter {
                     valBuf.writeBigUInt64LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
+                break;
+            case SHORT_STRING:
+                valBuf = Uint8Array.from(Array.from(value as String).map((letter) => letter.charCodeAt(0)));
+                buf = Buffer.concat([buf, Buffer.from([value.length]), valBuf]);
                 break;
             default:
                 throw new Error(`Unrecognized Type to Write to Controller: ${tag.type}`);

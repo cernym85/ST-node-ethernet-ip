@@ -1,6 +1,6 @@
 {
   "name": "@myscada/st-ethernet-ip",
-  "version": "2.7.4-3",
+  "version": "2.7.4-14",
   "description": "A simple node interface for Ethernet/IP.",
   "keywords": [
     "rockwell",

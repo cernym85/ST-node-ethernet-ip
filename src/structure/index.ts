@@ -166,7 +166,7 @@ export class Structure extends Tag {
 
         let structValues = {};
         
-        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LINT, ULINT, LREAL, BIT_STRING, BOOL, STRUCT } = CIP.DataTypes.Types;
+        const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LINT, ULINT, LREAL, BIT_STRING, BOOL, STRUCT, SHORT_STRING } = CIP.DataTypes.Types;
 
         template._members.forEach((member) => {
           /* eslint-disable indent */
@@ -291,6 +291,20 @@ export class Structure extends Tag {
                 structValues[member.name] = array;
               } else {
                 structValues[member.name] = data.readUInt32LE(member.offset);
+              }
+              break;
+            case SHORT_STRING:
+              if (member.type.arrayDims > 0) {
+                let array = [];
+                for (let i = 0; i < member.info; i++) {
+                  let shortString8bitValue = data.readUInt8(member.offset + i);
+                  for (let j = 0; j < 32; j++) {
+                    array.push(!!((shortString8bitValue >> j) & 0x01));
+                  }
+                }
+                structValues[member.name] = array;
+              } else {
+                structValues[member.name] = data.readUInt8(member.offset);
               }
               break;
             case BOOL:
