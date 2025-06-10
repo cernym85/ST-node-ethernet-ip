@@ -659,7 +659,9 @@ export class Tag extends EventEmitter {
      * @memberof Tag
      */
     generateWriteMessageRequest(value: any = null, size: number = 0x01): Buffer {
-        if (value !== null) this.state.tag.value = value;
+        if (value !== null) {
+            this.state.tag.value = value;
+        } 
 
         const { tag } = this.state;
 
@@ -762,8 +764,12 @@ export class Tag extends EventEmitter {
 
         buf.writeUInt16LE(tag.type, 0);
 
-        if (Array.isArray(value)) {
-            buf.writeUInt16LE(value.length, 2);
+        if (Array.isArray(tag.value)) {
+            if (tag.type == BIT_STRING) {
+                buf.writeUInt16LE(Math.ceil(tag.value.length / 32), 2);
+            } else {
+                buf.writeUInt16LE(tag.value.length, 2);
+            }
         } else {
             buf.writeUInt16LE(size, 2);
         }
@@ -802,7 +808,7 @@ export class Tag extends EventEmitter {
                     }
                 } else {
                     valBuf = Buffer.alloc(2);
-                    valBuf.writeInt16LE(tag.value);                    
+                    valBuf.writeUInt16LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);
                 break;
@@ -926,7 +932,7 @@ export class Tag extends EventEmitter {
      * @returns Write Tag Message Service
      * @memberof Tag
      */
-    generateWriteMessageRequestFrag(offset: number = 0, value: Buffer = null, size: number = 0x01) {
+    generateWriteMessageRequestFrag(offset: number = 0, value: any, size: number = 0x01) {
         const { tag } = this.state;
         const { SINT, USINT, INT, UINT, DINT, UDINT, REAL, LREAL, BOOL, LINT, ULINT } = Types;
         // Build Message Router to Embed in UCMM
@@ -940,6 +946,18 @@ export class Tag extends EventEmitter {
         /* eslint-disable indent */
         switch (tag.type) {
             case SINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(value.length);
+                    for (var i = 0; i < value.length; i++) {
+                        valBuf.writeInt8(value[i], i);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(1);
+                    valBuf.writeInt8(value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case USINT:
                 if (Array.isArray(value)) {
                     valBuf = Buffer.alloc(value.length);
                     for (var i = 0; i < value.length; i++) {
@@ -995,6 +1013,18 @@ export class Tag extends EventEmitter {
                     }
                 } else {
                     valBuf = Buffer.alloc(4);
+                    valBuf.writeInt32LE(value);                    
+                }
+                buf = Buffer.concat([buf, valBuf]);               
+                break;
+            case UDINT:
+                if (Array.isArray(value)) {
+                    valBuf = Buffer.alloc(4 * value.length);
+                    for (let i = 0; i < value.length; i++) {
+                        valBuf.writeInt32LE(value[i], i * 4);
+                    }
+                } else {
+                    valBuf = Buffer.alloc(4);
                     valBuf.writeInt32LE(tag.value);                    
                 }
                 buf = Buffer.concat([buf, valBuf]);               
@@ -1037,7 +1067,7 @@ export class Tag extends EventEmitter {
                 break;
             case BOOL:
                 valBuf = Buffer.alloc(1);
-                if (!tag.value) valBuf.writeInt8(0x00);
+                if (!value) valBuf.writeInt8(0x00);
                 else valBuf.writeInt8(0x01);
 
                 buf = Buffer.concat([buf, valBuf]);
@@ -1050,6 +1080,9 @@ export class Tag extends EventEmitter {
                 if (Array.isArray(value)) {
                     valBuf = Buffer.alloc(8 * value.length);
                     for (let i = 0; i < value.length; i++) {
+                        if (typeof value[i] != 'bigint') {
+                            value[i] = BigInt(value[i])
+                        }
                         valBuf.writeBigInt64LE(value[i], i * 8);
                     }
                 } else {
